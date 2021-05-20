@@ -73,7 +73,7 @@ public class Server {
             //
             DataBaseManager dataBaseManager = new DataBaseManager();
             dataBaseManager.fillCollection(collectionManager);
-            logger.info("The collection is created based on the contents of the file.");
+            logger.info("The collection is created based on the contents of the database.");
             openChannel();
             while (true) {
                 int readyChannels = selector.select(SERVER_WAITING_TIME);

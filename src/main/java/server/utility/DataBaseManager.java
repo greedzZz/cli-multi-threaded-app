@@ -31,12 +31,12 @@ public class DataBaseManager {
     public void createMainTable() throws SQLException {
         try {
             statement = connection.createStatement();
-            String sqlCommand = "CREATE TABLE IF NOT EXISTS \"SpaceMarines\" (\"ID\" INT PRIMARY KEY," +
-                    " \"Name\" VARCHAR(255) NOT NULL, \"Coordinate X\" INT NOT NULL," +
-                    " \"Coordinate Y\" INT NOT NULL, \"Creation date\" VARCHAR(63) NOT NULL," +
-                    " \"Health\" INT, \"Astartes category\" VARCHAR(255), \"Weapon\" VARCHAR(255)," +
-                    " \"Melee weapon\" VARCHAR(255), \"Chapter name\" VARCHAR(255) NOT NULL ," +
-                    " \"Chapter world\" VARCHAR(255) NOT NULL);";
+            String sqlCommand = "CREATE TABLE IF NOT EXISTS marines (id INT PRIMARY KEY," +
+                    " name VARCHAR(255) NOT NULL, coordinate_x INT NOT NULL," +
+                    " coordinate_y INT NOT NULL, creation_date VARCHAR(63) NOT NULL," +
+                    " health INT, astartes_category VARCHAR(255), weapon VARCHAR(255)," +
+                    " melee_weapon VARCHAR(255), chapter_name VARCHAR(255) NOT NULL ," +
+                    " chapter_world VARCHAR(255) NOT NULL);";
             statement.executeUpdate(sqlCommand);
         } catch (SQLException e) {
             throw new SQLException("A database access error has occurred or connection has closed.");
@@ -47,23 +47,23 @@ public class DataBaseManager {
         loadDriver();
         connect();
         createMainTable();
-        String sqlCommand = "SELECT * FROM \"SpaceMarines\";";
+        String sqlCommand = "SELECT * FROM marines;";
         ResultSet resultSet = statement.executeQuery(sqlCommand);
         while (resultSet.next()) {
-            int id = resultSet.getInt("ID");
-            String name = resultSet.getString("Name");
-            int x = resultSet.getInt("Coordinate X");
-            Integer y = resultSet.getInt("Coordinate Y");
+            int id = resultSet.getInt("id");
+            String name = resultSet.getString("name");
+            int x = resultSet.getInt("coordinate_x");
+            Integer y = resultSet.getInt("coordinate_y");
 
-            String strDate = resultSet.getString("Creation date");
+            String strDate = resultSet.getString("creation_date");
             CharSequence creationDate = strDate.subSequence(0, strDate.length());
 
-            Integer health = resultSet.getInt("Health");
+            Integer health = resultSet.getInt("health");
             if (health == 0) {
                 health = null;
             }
 
-            String strCategory = resultSet.getString("Astartes category");
+            String strCategory = resultSet.getString("astartes_category");
             AstartesCategory category;
             if (strCategory == null) {
                 category = null;
@@ -71,7 +71,7 @@ public class DataBaseManager {
                 category = AstartesCategory.valueOf(strCategory);
             }
 
-            String strWeapon = resultSet.getString("Weapon");
+            String strWeapon = resultSet.getString("weapon");
             Weapon weapon;
             if (strWeapon == null) {
                 weapon = null;
@@ -79,7 +79,7 @@ public class DataBaseManager {
                 weapon = Weapon.valueOf(strWeapon);
             }
 
-            String strMelee = resultSet.getString("Melee weapon");
+            String strMelee = resultSet.getString("melee_weapon");
             MeleeWeapon meleeWeapon;
             if (strMelee == null) {
                 meleeWeapon = null;
@@ -87,8 +87,8 @@ public class DataBaseManager {
                 meleeWeapon = MeleeWeapon.valueOf(strMelee);
             }
 
-            String chapName = resultSet.getString("Chapter name");
-            String chapWorld = resultSet.getString("Chapter world");
+            String chapName = resultSet.getString("chapter_name");
+            String chapWorld = resultSet.getString("chapter_world");
 
             cm.put(new SpaceMarine(id, name, new Coordinates(x, y), creationDate, health, category, weapon, meleeWeapon, new Chapter(chapName, chapWorld)));
         }

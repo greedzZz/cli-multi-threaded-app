@@ -4,7 +4,7 @@ import common.content.Chapter;
 import common.content.SpaceMarine;
 import server.utility.SpaceMarineDescriber;
 
-import java.sql.Connection;
+import java.sql.*;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -19,7 +19,8 @@ public class CollectionManager {
     private final Date date;
     private final HashMap<String, String> commandPool = new HashMap<>();
     private Connection connection;
-//    private File file;
+    private Statement statement;
+    private PreparedStatement preparedStatement;
 
     {
         commandPool.put("help", "Displays information on available commands.");
@@ -75,9 +76,88 @@ public class CollectionManager {
         try {
             sm.setID(key);
             sm.setCreationDate();
-            return put(sm);
-        } catch (Exception e) {
-            return e.getMessage() + "\n";
+            String sqlCommand;
+            if (treeMap.containsKey(key)) {
+                sqlCommand = "UPDATE marines SET name=?, coordinate_x=?, coordinate_y=?," +
+                        " creation_date=?, health=?, astartes_category=?," +
+                        " weapon=?, melee_weapon=?, chapter_name=?, chapter_world=? WHERE id=?;";
+                preparedStatement = connection.prepareStatement(sqlCommand);
+
+                preparedStatement.setString(1, sm.getName());
+                preparedStatement.setInt(2, sm.getCoordinateX());
+                preparedStatement.setInt(3, sm.getCoordinateY());
+                preparedStatement.setString(4, sm.getCreationDate());
+
+                if (sm.getHealth() == null) {
+                    preparedStatement.setNull(5, Types.INTEGER);
+                } else {
+                    preparedStatement.setInt(5, sm.getHealth());
+                }
+
+                if (sm.getCategory() == null) {
+                    preparedStatement.setNull(6, Types.VARCHAR);
+                } else {
+                    preparedStatement.setString(6, sm.getCategory().toString());
+                }
+
+                if (sm.getWeaponType() == null) {
+                    preparedStatement.setNull(7, Types.VARCHAR);
+                } else {
+                    preparedStatement.setString(7, sm.getWeaponType().toString());
+                }
+
+                if (sm.getMeleeWeapon() == null) {
+                    preparedStatement.setNull(8, Types.VARCHAR);
+                } else {
+                    preparedStatement.setString(8, sm.getMeleeWeapon().toString());
+                }
+
+                preparedStatement.setString(9, sm.getChapterName());
+                preparedStatement.setString(10, sm.getChapterWorld());
+                preparedStatement.setInt(11, key);
+                preparedStatement.executeUpdate();
+                return put(sm);
+            } else {
+                sqlCommand = "INSERT INTO marines VALUES (?,?,?,?,?,?,?,?,?,?,?);";
+                preparedStatement = connection.prepareStatement(sqlCommand);
+
+                preparedStatement.setInt(1, key);
+                preparedStatement.setString(2, sm.getName());
+                preparedStatement.setInt(3, sm.getCoordinateX());
+                preparedStatement.setInt(4, sm.getCoordinateY());
+                preparedStatement.setString(5, sm.getCreationDate());
+
+                if (sm.getHealth() == null) {
+                    preparedStatement.setNull(6, Types.INTEGER);
+                } else {
+                    preparedStatement.setInt(6, sm.getHealth());
+                }
+
+                if (sm.getCategory() == null) {
+                    preparedStatement.setNull(7, Types.VARCHAR);
+                } else {
+                    preparedStatement.setString(7, sm.getCategory().toString());
+                }
+
+                if (sm.getWeaponType() == null) {
+                    preparedStatement.setNull(8, Types.VARCHAR);
+                } else {
+                    preparedStatement.setString(8, sm.getWeaponType().toString());
+                }
+
+                if (sm.getMeleeWeapon() == null) {
+                    preparedStatement.setNull(9, Types.VARCHAR);
+                } else {
+                    preparedStatement.setString(9, sm.getMeleeWeapon().toString());
+                }
+
+                preparedStatement.setString(10, sm.getChapterName());
+                preparedStatement.setString(11, sm.getChapterWorld());
+                preparedStatement.executeUpdate();
+                return put(sm);
+            }
+        } catch (SQLException e) {
+            return "A database access error has occurred or connection has closed.\n";
         }
     }
 
@@ -88,9 +168,49 @@ public class CollectionManager {
             } else {
                 sm.setID(id);
                 sm.setCreationDate();
-                return put(sm) +
-                        "Value of element with id " + id + " has been updated.\n";
+                String sqlCommand = "UPDATE marines SET name=?, coordinate_x=?, coordinate_y=?," +
+                        " creation_date=?, health=?, astartes_category=?," +
+                        " weapon=?, melee_weapon=?, chapter_name=?, chapter_world=? WHERE id=?;";
+                preparedStatement = connection.prepareStatement(sqlCommand);
+
+                preparedStatement.setString(1, sm.getName());
+                preparedStatement.setInt(2, sm.getCoordinateX());
+                preparedStatement.setInt(3, sm.getCoordinateY());
+                preparedStatement.setString(4, sm.getCreationDate());
+
+                if (sm.getHealth() == null) {
+                    preparedStatement.setNull(5, Types.INTEGER);
+                } else {
+                    preparedStatement.setInt(5, sm.getHealth());
+                }
+
+                if (sm.getCategory() == null) {
+                    preparedStatement.setNull(6, Types.VARCHAR);
+                } else {
+                    preparedStatement.setString(6, sm.getCategory().toString());
+                }
+
+                if (sm.getWeaponType() == null) {
+                    preparedStatement.setNull(7, Types.VARCHAR);
+                } else {
+                    preparedStatement.setString(7, sm.getWeaponType().toString());
+                }
+
+                if (sm.getMeleeWeapon() == null) {
+                    preparedStatement.setNull(8, Types.VARCHAR);
+                } else {
+                    preparedStatement.setString(8, sm.getMeleeWeapon().toString());
+                }
+
+                preparedStatement.setString(9, sm.getChapterName());
+                preparedStatement.setString(10, sm.getChapterWorld());
+                preparedStatement.setInt(11, id);
+                preparedStatement.executeUpdate();
+                put(sm);
+                return "Value of element with id " + id + " has been updated.\n";
             }
+        } catch (SQLException s) {
+            return "A database access error has occurred or connection has closed.\n";
         } catch (Exception e) {
             return e.getMessage() + "\n";
         }
@@ -101,23 +221,29 @@ public class CollectionManager {
             if (!treeMap.containsKey(key)) {
                 throw new Exception("There is no such argument in the collection.");
             } else {
+                String sqlCommand = "DELETE FROM marines WHERE id=?;";
+                preparedStatement = connection.prepareStatement(sqlCommand);
+                preparedStatement.setInt(1, key);
+                preparedStatement.executeUpdate();
                 treeMap.remove(key);
                 return "Element with " + key + " key has been deleted.\n";
             }
+        } catch (SQLException s) {
+            return "A database access error has occurred or connection has closed.\n";
         } catch (Exception e) {
             return e.getMessage() + "\n";
         }
     }
 
     public String clear() {
-        treeMap.clear();
-        return "The collection has been cleared.\n";
+        try {
+            statement.executeUpdate("DELETE FROM marines;");
+            treeMap.clear();
+            return "The collection has been cleared.\n";
+        } catch (SQLException s) {
+            return "A database access error has occurred or connection has closed.\n";
+        }
     }
-//
-//    public void save() {
-//        ObjectToXMLParser parser = new ObjectToXMLParser(file);
-//        parser.parse(treeMap);
-//    }
 
     public String executeScript() {
         return "Starting execution of the script.\n";
@@ -134,16 +260,30 @@ public class CollectionManager {
             } else {
                 Iterator<SpaceMarine> iterator = treeMap.values().iterator();
                 String name;
+                String sqlCommand;
                 StringBuilder sb = new StringBuilder();
                 while (iterator.hasNext()) {
                     SpaceMarine next = iterator.next();
                     if (sm.compareTo(next) < 0) {
                         name = next.getName();
-                        iterator.remove();
-                        sb.append("Space marine ").append(name).append(" has been removed from the collection.\n");
+                        try {
+                            sqlCommand = "DELETE FROM marines WHERE id=?;";
+                            preparedStatement = connection.prepareStatement(sqlCommand);
+                            preparedStatement.setInt(1, next.getID());
+                            preparedStatement.executeUpdate();
+                            iterator.remove();
+                            sb.append("Space marine ").append(name).append(" has been removed from the collection.\n");
+                        } catch (SQLException s) {
+                            sb.append("Space marine ").append(name).append(" has not been removed from the collection" +
+                                    " due to a database access error or a closed connection.\n");
+                        }
                     }
                 }
-                return sb.toString();
+                if (sb.length() > 0) {
+                    return sb.toString();
+                } else {
+                    return "There are no elements that are greater than the specified one.\n";
+                }
             }
         } catch (Exception e) {
             return e.getMessage() + "\n";
@@ -156,10 +296,52 @@ public class CollectionManager {
                 throw new Exception("There is no such argument in the collection.");
             } else {
                 if (sm.compareTo(treeMap.get(key)) > 0) {
-                    sm.setID(key);
-                    sm.setCreationDate();
-                    treeMap.put(sm.getID(), sm);
-                    return "Element with " + key + " key has been replaced.\n";
+                    try {
+                        sm.setID(key);
+                        sm.setCreationDate();
+                        String sqlCommand = "UPDATE marines SET name=?, coordinate_x=?, coordinate_y=?," +
+                                " creation_date=?, health=?, astartes_category=?," +
+                                " weapon=?, melee_weapon=?, chapter_name=?, chapter_world=? WHERE id=?;";
+                        preparedStatement = connection.prepareStatement(sqlCommand);
+
+                        preparedStatement.setString(1, sm.getName());
+                        preparedStatement.setInt(2, sm.getCoordinateX());
+                        preparedStatement.setInt(3, sm.getCoordinateY());
+                        preparedStatement.setString(4, sm.getCreationDate());
+
+                        if (sm.getHealth() == null) {
+                            preparedStatement.setNull(5, Types.INTEGER);
+                        } else {
+                            preparedStatement.setInt(5, sm.getHealth());
+                        }
+
+                        if (sm.getCategory() == null) {
+                            preparedStatement.setNull(6, Types.VARCHAR);
+                        } else {
+                            preparedStatement.setString(6, sm.getCategory().toString());
+                        }
+
+                        if (sm.getWeaponType() == null) {
+                            preparedStatement.setNull(7, Types.VARCHAR);
+                        } else {
+                            preparedStatement.setString(7, sm.getWeaponType().toString());
+                        }
+
+                        if (sm.getMeleeWeapon() == null) {
+                            preparedStatement.setNull(8, Types.VARCHAR);
+                        } else {
+                            preparedStatement.setString(8, sm.getMeleeWeapon().toString());
+                        }
+
+                        preparedStatement.setString(9, sm.getChapterName());
+                        preparedStatement.setString(10, sm.getChapterWorld());
+                        preparedStatement.setInt(11, key);
+                        preparedStatement.executeUpdate();
+                        treeMap.put(sm.getID(), sm);
+                        return "Element with " + key + " key has been replaced.\n";
+                    } catch (SQLException s) {
+                        return "A database access error has occurred or connection has closed.\n";
+                    }
                 } else {
                     return "Value of the entered element does not exceed the value of the collection element.\n";
                 }
@@ -175,16 +357,30 @@ public class CollectionManager {
                 throw new Exception("The collection is empty.");
             } else {
                 Iterator<SpaceMarine> iterator = treeMap.values().iterator();
+                String sqlCommand;
                 StringBuilder sb = new StringBuilder();
                 while (iterator.hasNext()) {
                     SpaceMarine next = iterator.next();
                     Integer currentKey = next.getID();
                     if (currentKey > key) {
-                        iterator.remove();
-                        sb.append("Element with key ").append(currentKey).append(" has been deleted.\n");
+                        try {
+                            sqlCommand = "DELETE FROM marines WHERE id=?;";
+                            preparedStatement = connection.prepareStatement(sqlCommand);
+                            preparedStatement.setInt(1, next.getID());
+                            preparedStatement.executeUpdate();
+                            iterator.remove();
+                            sb.append("Element with key ").append(currentKey).append(" has been deleted.\n");
+                        } catch (SQLException s) {
+                            sb.append("Element with key ").append(currentKey).append(" has not been deleted from the collection" +
+                                    " due to a database access error or a closed connection.\n");
+                        }
                     }
                 }
-                return sb.toString() + "\n";
+                if (sb.length() > 0) {
+                    return sb.toString();
+                } else {
+                    return "There are no elements whose key exceeds the given one.\n";
+                }
             }
         } catch (Exception e) {
             return e.getMessage();
@@ -273,11 +469,13 @@ public class CollectionManager {
         System.exit(0);
     }
 
-    public void setConnection(Connection connection) {
+    public void setConnection(Connection connection) throws SQLException {
         this.connection = connection;
+        try {
+            statement = connection.createStatement();
+        } catch (SQLException e) {
+            throw new SQLException("A database access error has occurred or connection has closed.");
+        }
     }
-//    public void setFile(File file) {
-//        this.file = file;
-//    }
 
 }
