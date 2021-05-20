@@ -2,9 +2,6 @@ package server.utility;
 
 import common.content.SpaceMarine;
 
-/**
- * A class that displays the value of an element in string representation.
- */
 public class SpaceMarineDescriber {
     public String describe(SpaceMarine sm) {
         return "id: " + sm.getID() + "\n" +

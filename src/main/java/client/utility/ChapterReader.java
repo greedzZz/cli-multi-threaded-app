@@ -4,9 +4,6 @@ import common.content.Chapter;
 
 import java.util.Scanner;
 
-/**
- * A class that reads Chapter values from input.
- */
 public class ChapterReader {
     private boolean fromFile = false;
 

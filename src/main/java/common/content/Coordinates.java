@@ -2,9 +2,6 @@ package common.content;
 
 import java.io.Serializable;
 
-/**
- * Class coordinates.
- */
 public class Coordinates implements Serializable {
     private final int x;
     private final Integer y; //Максимальное значение поля: 941, Поле не может быть null

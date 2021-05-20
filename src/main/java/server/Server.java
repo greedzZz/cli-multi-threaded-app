@@ -5,9 +5,7 @@ import common.commands.Command;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import server.utility.DataBaseManager;
-//import server.utility.FileManager;
 
-//import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -70,7 +68,6 @@ public class Server {
     public void run() {
         try {
             CollectionManager collectionManager = new CollectionManager();
-            //
             DataBaseManager dataBaseManager = new DataBaseManager();
             dataBaseManager.fillCollection(collectionManager);
             logger.info("The collection is created based on the contents of the database.");

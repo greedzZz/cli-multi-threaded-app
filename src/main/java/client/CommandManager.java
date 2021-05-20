@@ -13,10 +13,6 @@ import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.Scanner;
 
-/**
- * User interface of the program.
- * Reads user input.
- */
 public class CommandManager {
     private final ElementReader elementReader;
     private final ChapterReader chapterReader;
