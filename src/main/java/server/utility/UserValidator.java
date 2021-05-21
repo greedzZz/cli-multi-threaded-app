@@ -8,8 +8,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class UserValidator {
+    private final Connection connection;
 
-    public boolean validate(User user, Connection connection) throws SQLException {
+    public UserValidator(Connection connection) {
+        this.connection = connection;
+    }
+
+    public boolean validate(User user) throws SQLException {
         if (user.isNewbie()) {
             String sqlCommand = "SELECT login FROM users WHERE login=?;";
             PreparedStatement preparedStatement = connection.prepareStatement(sqlCommand);

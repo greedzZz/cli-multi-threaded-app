@@ -1,10 +1,10 @@
 package server;
 
 import common.Serializer;
-import common.User;
 import common.commands.Command;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import server.utility.CommandExecutor;
 import server.utility.DataBaseManager;
 import server.utility.UserValidator;
 
@@ -13,27 +13,22 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.sql.SQLException;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
     private SocketAddress address;
     private DatagramChannel channel;
-    private Selector selector;
-    private final int SERVER_WAITING_TIME = 60 * 60 * 1000;
     private final int PORT = 8725;
     private final Serializer serializer;
     private final Logger logger;
-    private final UserValidator userValidator;
+    private final ExecutorService service;
 
     public Server() {
         logger = LogManager.getLogger();
         this.address = new InetSocketAddress(PORT);
         this.serializer = new Serializer();
-        this.userValidator = new UserValidator();
+        service = Executors.newFixedThreadPool(10);
         logger.info("Server start.");
 
     }
@@ -44,10 +39,7 @@ public class Server {
     }
 
     public void openChannel() throws IOException {
-        selector = Selector.open();
         this.channel = DatagramChannel.open();
-        channel.configureBlocking(false);
-        channel.register(selector, SelectionKey.OP_READ);
         channel.bind(address);
         logger.info("The channel is open and bound to an address.");
     }
@@ -61,13 +53,18 @@ public class Server {
     }
 
     public String executeCommand(Command command, CollectionManager cm) {
+        logger.info("The server is trying to execute a client's request.");
         return command.execute(cm);
     }
 
-    public void sendAnswer(String str) throws IOException {
-        ByteBuffer byteBuffer = ByteBuffer.wrap(serializer.serialize(str));
-        channel.send(byteBuffer, address);
-        logger.info("The server sent an answer to client.");
+    public void sendAnswer(String str) {
+        try {
+            ByteBuffer byteBuffer = ByteBuffer.wrap(serializer.serialize(str));
+            channel.send(byteBuffer, address);
+            logger.info("The server sent an answer to client.");
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+        }
     }
 
     public void run() {
@@ -77,39 +74,10 @@ public class Server {
             dataBaseManager.fillCollection(collectionManager);
             logger.info("The collection is created based on the contents of the database.");
             openChannel();
+            UserValidator userValidator = new UserValidator(dataBaseManager.getConnection());
             while (true) {
-                int readyChannels = selector.select(SERVER_WAITING_TIME);
-                if (readyChannels == 0) {
-                    selector.close();
-                    channel.close();
-                    logger.info("Server shutdown.");
-                    collectionManager.close();
-                }
-                Set<SelectionKey> selectedKeys = selector.selectedKeys();
-                Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
-                while (keyIterator.hasNext()) {
-                    SelectionKey key = keyIterator.next();
-                    if (key.isReadable()) {
-                        channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-                    }
-                    if (key.isWritable()) {
-                        try {
-                            Command command = readRequest();
-                            User user = command.getUser();
-                            if (userValidator.validate(user, dataBaseManager.getConnection())) {
-                                sendAnswer(executeCommand(command, collectionManager));
-                            } else if (user.isNewbie()) {
-                                sendAnswer("Unfortunately, a user with this login is already registered.\n");
-                            } else {
-                                sendAnswer("Sorry, the login/password is incorrect.");
-                            }
-                        } catch (SQLException s) {
-                            sendAnswer("A database access error has occurred or connection has closed.\n");
-                        }
-                        channel.register(selector, SelectionKey.OP_READ);
-                    }
-                    keyIterator.remove();
-                }
+                new Thread(new CommandExecutor(service.submit(this::readRequest).get(),
+                        this, collectionManager, userValidator)).start();
             }
         } catch (Exception e) {
             logger.error(e.getMessage());

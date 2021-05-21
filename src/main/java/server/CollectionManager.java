@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 public class CollectionManager {
@@ -20,6 +21,7 @@ public class CollectionManager {
     private final HashMap<String, String> commandPool = new HashMap<>();
     private Connection connection;
     private PreparedStatement preparedStatement;
+    private final ReentrantLock lock;
 
     {
         commandPool.put("help", "Displays information on available commands.");
@@ -42,6 +44,7 @@ public class CollectionManager {
     public CollectionManager() {
         this.date = new Date();
         this.treeMap = new TreeMap<>();
+        this.lock = new ReentrantLock();
     }
 
     public String help() {
@@ -72,6 +75,7 @@ public class CollectionManager {
     }
 
     public String insert(Integer key, SpaceMarine sm, String login) {
+        lock.lock();
         try {
             sm.setID(key);
             sm.setCreationDate();
@@ -129,10 +133,13 @@ public class CollectionManager {
             }
         } catch (SQLException e) {
             return "A database access error has occurred or connection has closed.\n";
+        } finally {
+            lock.unlock();
         }
     }
 
     public String update(Integer id, SpaceMarine sm, String login) {
+        lock.lock();
         try {
             if (!treeMap.containsKey(id)) {
                 throw new Exception("There is no element with such id in the collection.");
@@ -154,10 +161,13 @@ public class CollectionManager {
             return "A database access error has occurred or connection has closed.\n";
         } catch (Exception e) {
             return e.getMessage() + "\n";
+        } finally {
+            lock.unlock();
         }
     }
 
     public String removeKey(Integer key, String login) {
+        lock.lock();
         try {
             if (!treeMap.containsKey(key)) {
                 throw new Exception("There is no such argument in the collection.");
@@ -178,10 +188,13 @@ public class CollectionManager {
             return "A database access error has occurred or connection has closed.\n";
         } catch (Exception e) {
             return e.getMessage() + "\n";
+        } finally {
+            lock.unlock();
         }
     }
 
     public String clear(String login) {
+        lock.lock();
         try {
             if (treeMap.isEmpty()) {
                 throw new Exception("The collection is empty.");
@@ -216,10 +229,13 @@ public class CollectionManager {
             }
         } catch (Exception e) {
             return e.getMessage() + "\n";
+        } finally {
+            lock.unlock();
         }
     }
 
     public String removeGreater(SpaceMarine sm, String login) {
+        lock.lock();
         try {
             if (treeMap.isEmpty()) {
                 throw new Exception("The collection is empty.");
@@ -256,10 +272,13 @@ public class CollectionManager {
             }
         } catch (Exception e) {
             return e.getMessage() + "\n";
+        } finally {
+            lock.unlock();
         }
     }
 
     public String replaceIfGreater(Integer key, SpaceMarine sm, String login) {
+        lock.lock();
         try {
             if (!treeMap.containsKey(key)) {
                 throw new Exception("There is no such argument in the collection.");
@@ -287,10 +306,13 @@ public class CollectionManager {
             }
         } catch (Exception e) {
             return e.getMessage() + "\n";
+        } finally {
+            lock.unlock();
         }
     }
 
     public String removeGreaterKey(Integer key, String login) {
+        lock.lock();
         try {
             if (treeMap.isEmpty()) {
                 throw new Exception("The collection is empty.");
@@ -326,6 +348,8 @@ public class CollectionManager {
             }
         } catch (Exception e) {
             return e.getMessage();
+        } finally {
+            lock.unlock();
         }
     }
 
