@@ -4,7 +4,8 @@ import common.content.Chapter;
 import server.CollectionManager;
 
 public class FilterByChapter extends Command {
-    public FilterByChapter(Chapter chapArg) {
+    public FilterByChapter(boolean newbie, String login, String password, Chapter chapArg) {
+        super(newbie, login, password);
         this.chapArg = chapArg;
     }
 

@@ -4,7 +4,10 @@ import common.content.Chapter;
 import common.content.SpaceMarine;
 import server.utility.SpaceMarineDescriber;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -68,76 +71,84 @@ public class CollectionManager {
         }
     }
 
-    public String insert(Integer key, SpaceMarine sm) {
+    public String insert(Integer key, SpaceMarine sm, String login) {
         try {
             sm.setID(key);
             sm.setCreationDate();
+            sm.setOwner(login);
             String sqlCommand;
             if (treeMap.containsKey(key)) {
-                sqlCommand = "UPDATE marines SET name=?, coordinate_x=?, coordinate_y=?," +
-                        " creation_date=?, health=?, astartes_category=?," +
-                        " weapon=?, melee_weapon=?, chapter_name=?, chapter_world=? WHERE id=?;";
-                updateDataBase(sqlCommand, sm, key);
+                if (checkUser(key, login)) {
+                    updateDataBase(sm, key, login);
+                    preparedStatement.executeUpdate();
+                    preparedStatement.close();
+                    return put(sm);
+                } else {
+                    return "The collection item with id " + key + " is owned by another user.\n";
+                }
             } else {
-                sqlCommand = "INSERT INTO marines VALUES (?,?,?,?,?,?,?,?,?,?,?);";
+                sqlCommand = "INSERT INTO marines VALUES (?,?,?,?,?,?,?,?,?,?,?,?);";
                 preparedStatement = connection.prepareStatement(sqlCommand);
 
-                preparedStatement.setInt(1, key);
-                preparedStatement.setString(2, sm.getName());
-                preparedStatement.setInt(3, sm.getCoordinateX());
-                preparedStatement.setInt(4, sm.getCoordinateY());
-                preparedStatement.setString(5, sm.getCreationDate());
+                preparedStatement.setString(1, login);
+                preparedStatement.setInt(2, key);
+                preparedStatement.setString(3, sm.getName());
+                preparedStatement.setInt(4, sm.getCoordinateX());
+                preparedStatement.setInt(5, sm.getCoordinateY());
+                preparedStatement.setString(6, sm.getCreationDate());
 
                 if (sm.getHealth() == null) {
-                    preparedStatement.setNull(6, Types.INTEGER);
+                    preparedStatement.setNull(7, Types.INTEGER);
                 } else {
-                    preparedStatement.setInt(6, sm.getHealth());
+                    preparedStatement.setInt(7, sm.getHealth());
                 }
 
                 if (sm.getCategory() == null) {
-                    preparedStatement.setNull(7, Types.VARCHAR);
+                    preparedStatement.setNull(8, Types.VARCHAR);
                 } else {
-                    preparedStatement.setString(7, sm.getCategory().toString());
+                    preparedStatement.setString(8, sm.getCategory().toString());
                 }
 
                 if (sm.getWeaponType() == null) {
-                    preparedStatement.setNull(8, Types.VARCHAR);
+                    preparedStatement.setNull(9, Types.VARCHAR);
                 } else {
-                    preparedStatement.setString(8, sm.getWeaponType().toString());
+                    preparedStatement.setString(9, sm.getWeaponType().toString());
                 }
 
                 if (sm.getMeleeWeapon() == null) {
-                    preparedStatement.setNull(9, Types.VARCHAR);
+                    preparedStatement.setNull(10, Types.VARCHAR);
                 } else {
-                    preparedStatement.setString(9, sm.getMeleeWeapon().toString());
+                    preparedStatement.setString(10, sm.getMeleeWeapon().toString());
                 }
 
-                preparedStatement.setString(10, sm.getChapterName());
-                preparedStatement.setString(11, sm.getChapterWorld());
+                preparedStatement.setString(11, sm.getChapterName());
+                preparedStatement.setString(12, sm.getChapterWorld());
+                preparedStatement.executeUpdate();
+                preparedStatement.close();
+                return put(sm);
             }
-            preparedStatement.executeUpdate();
-            preparedStatement.close();
-            return put(sm);
         } catch (SQLException e) {
             return "A database access error has occurred or connection has closed.\n";
         }
     }
 
-    public String update(Integer id, SpaceMarine sm) {
+    public String update(Integer id, SpaceMarine sm, String login) {
         try {
             if (!treeMap.containsKey(id)) {
                 throw new Exception("There is no element with such id in the collection.");
             } else {
                 sm.setID(id);
                 sm.setCreationDate();
-                String sqlCommand = "UPDATE marines SET name=?, coordinate_x=?, coordinate_y=?," +
-                        " creation_date=?, health=?, astartes_category=?," +
-                        " weapon=?, melee_weapon=?, chapter_name=?, chapter_world=? WHERE id=?;";
-                updateDataBase(sqlCommand, sm, id);
-                preparedStatement.executeUpdate();
-                preparedStatement.close();
-                put(sm);
-                return "Value of element with id " + id + " has been updated.\n";
+                sm.setOwner(login);
+                if (checkUser(id, login)) {
+                    updateDataBase(sm, id, login);
+                    preparedStatement.executeUpdate();
+                    preparedStatement.close();
+                    put(sm);
+                    return "Value of element with id " + id + " has been updated.\n";
+                } else {
+                    return "The collection item with id " + id + " is owned by another user.\n";
+                }
             }
         } catch (SQLException s) {
             return "A database access error has occurred or connection has closed.\n";
@@ -146,18 +157,22 @@ public class CollectionManager {
         }
     }
 
-    public String removeKey(Integer key) {
+    public String removeKey(Integer key, String login) {
         try {
             if (!treeMap.containsKey(key)) {
                 throw new Exception("There is no such argument in the collection.");
             } else {
-                String sqlCommand = "DELETE FROM marines WHERE id=?;";
-                preparedStatement = connection.prepareStatement(sqlCommand);
-                preparedStatement.setInt(1, key);
-                preparedStatement.executeUpdate();
-                preparedStatement.close();
-                treeMap.remove(key);
-                return "Element with " + key + " key has been deleted.\n";
+                if (checkUser(key, login)) {
+                    String sqlCommand = "DELETE FROM marines WHERE id=?;";
+                    preparedStatement = connection.prepareStatement(sqlCommand);
+                    preparedStatement.setInt(1, key);
+                    preparedStatement.executeUpdate();
+                    preparedStatement.close();
+                    treeMap.remove(key);
+                    return "Element with " + key + " key has been deleted.\n";
+                } else {
+                    return "The collection item with id " + key + " is owned by another user.\n";
+                }
             }
         } catch (SQLException s) {
             return "A database access error has occurred or connection has closed.\n";
@@ -166,27 +181,45 @@ public class CollectionManager {
         }
     }
 
-    public String clear() {
+    public String clear(String login) {
         try {
-            Statement statement = connection.createStatement();
-            statement.executeUpdate("DELETE FROM marines;");
-            statement.close();
-            treeMap.clear();
-            return "The collection has been cleared.\n";
-        } catch (SQLException s) {
-            return "A database access error has occurred or connection has closed.\n";
+            if (treeMap.isEmpty()) {
+                throw new Exception("The collection is empty.");
+            } else {
+                Iterator<SpaceMarine> iterator = treeMap.values().iterator();
+                String name;
+                String sqlCommand;
+                StringBuilder sb = new StringBuilder();
+                while (iterator.hasNext()) {
+                    SpaceMarine next = iterator.next();
+                    name = next.getName();
+                    try {
+                        if (checkUser(next.getID(), login)) {
+                            sqlCommand = "DELETE FROM marines WHERE id=?;";
+                            preparedStatement = connection.prepareStatement(sqlCommand);
+                            preparedStatement.setInt(1, next.getID());
+                            preparedStatement.executeUpdate();
+                            preparedStatement.close();
+                            iterator.remove();
+                            sb.append("Space marine ").append(name).append(" has been removed from the collection.\n");
+                        }
+                    } catch (SQLException s) {
+                        sb.append("Space marine ").append(name).append(" has not been removed from the collection" +
+                                " due to a database access error or a closed connection.\n");
+                    }
+                }
+                if (sb.length() > 0) {
+                    return sb.toString();
+                } else {
+                    return "There are no elements that are belong to you.\n";
+                }
+            }
+        } catch (Exception e) {
+            return e.getMessage() + "\n";
         }
     }
 
-    public String executeScript() {
-        return "Starting execution of the script.\n";
-    }
-
-    public String exit() {
-        return "The program is finished.\n";
-    }
-
-    public String removeGreater(SpaceMarine sm) {
+    public String removeGreater(SpaceMarine sm, String login) {
         try {
             if (treeMap.isEmpty()) {
                 throw new Exception("The collection is empty.");
@@ -200,13 +233,15 @@ public class CollectionManager {
                     if (sm.compareTo(next) < 0) {
                         name = next.getName();
                         try {
-                            sqlCommand = "DELETE FROM marines WHERE id=?;";
-                            preparedStatement = connection.prepareStatement(sqlCommand);
-                            preparedStatement.setInt(1, next.getID());
-                            preparedStatement.executeUpdate();
-                            preparedStatement.close();
-                            iterator.remove();
-                            sb.append("Space marine ").append(name).append(" has been removed from the collection.\n");
+                            if (checkUser(next.getID(), login)) {
+                                sqlCommand = "DELETE FROM marines WHERE id=?;";
+                                preparedStatement = connection.prepareStatement(sqlCommand);
+                                preparedStatement.setInt(1, next.getID());
+                                preparedStatement.executeUpdate();
+                                preparedStatement.close();
+                                iterator.remove();
+                                sb.append("Space marine ").append(name).append(" has been removed from the collection.\n");
+                            }
                         } catch (SQLException s) {
                             sb.append("Space marine ").append(name).append(" has not been removed from the collection" +
                                     " due to a database access error or a closed connection.\n");
@@ -216,7 +251,7 @@ public class CollectionManager {
                 if (sb.length() > 0) {
                     return sb.toString();
                 } else {
-                    return "There are no elements that are greater than the specified one.\n";
+                    return "There are no elements that are greater than the specified one and belong to you.\n";
                 }
             }
         } catch (Exception e) {
@@ -224,7 +259,7 @@ public class CollectionManager {
         }
     }
 
-    public String replaceIfGreater(Integer key, SpaceMarine sm) {
+    public String replaceIfGreater(Integer key, SpaceMarine sm, String login) {
         try {
             if (!treeMap.containsKey(key)) {
                 throw new Exception("There is no such argument in the collection.");
@@ -233,14 +268,16 @@ public class CollectionManager {
                     try {
                         sm.setID(key);
                         sm.setCreationDate();
-                        String sqlCommand = "UPDATE marines SET name=?, coordinate_x=?, coordinate_y=?," +
-                                " creation_date=?, health=?, astartes_category=?," +
-                                " weapon=?, melee_weapon=?, chapter_name=?, chapter_world=? WHERE id=?;";
-                        updateDataBase(sqlCommand, sm, key);
-                        preparedStatement.executeUpdate();
-                        preparedStatement.close();
-                        treeMap.put(sm.getID(), sm);
-                        return "Element with " + key + " key has been replaced.\n";
+                        sm.setOwner(login);
+                        if (checkUser(key, login)) {
+                            updateDataBase(sm, key, login);
+                            preparedStatement.executeUpdate();
+                            preparedStatement.close();
+                            treeMap.put(sm.getID(), sm);
+                            return "Element with " + key + " key has been replaced.\n";
+                        } else {
+                            return "The collection item with id " + key + " is owned by another user.\n";
+                        }
                     } catch (SQLException s) {
                         return "A database access error has occurred or connection has closed.\n";
                     }
@@ -253,7 +290,7 @@ public class CollectionManager {
         }
     }
 
-    public String removeGreaterKey(Integer key) {
+    public String removeGreaterKey(Integer key, String login) {
         try {
             if (treeMap.isEmpty()) {
                 throw new Exception("The collection is empty.");
@@ -266,13 +303,15 @@ public class CollectionManager {
                     Integer currentKey = next.getID();
                     if (currentKey > key) {
                         try {
-                            sqlCommand = "DELETE FROM marines WHERE id=?;";
-                            preparedStatement = connection.prepareStatement(sqlCommand);
-                            preparedStatement.setInt(1, next.getID());
-                            preparedStatement.executeUpdate();
-                            preparedStatement.close();
-                            iterator.remove();
-                            sb.append("Element with key ").append(currentKey).append(" has been deleted.\n");
+                            if (checkUser(next.getID(), login)) {
+                                sqlCommand = "DELETE FROM marines WHERE id=?;";
+                                preparedStatement = connection.prepareStatement(sqlCommand);
+                                preparedStatement.setInt(1, next.getID());
+                                preparedStatement.executeUpdate();
+                                preparedStatement.close();
+                                iterator.remove();
+                                sb.append("Element with key ").append(currentKey).append(" has been deleted.\n");
+                            }
                         } catch (SQLException s) {
                             sb.append("Element with key ").append(currentKey).append(" has not been deleted from the collection" +
                                     " due to a database access error or a closed connection.\n");
@@ -282,7 +321,7 @@ public class CollectionManager {
                 if (sb.length() > 0) {
                     return sb.toString();
                 } else {
-                    return "There are no elements whose key exceeds the given one.\n";
+                    return "There are no elements whose key exceeds the given one and belong to you.\n";
                 }
             }
         } catch (Exception e) {
@@ -362,41 +401,53 @@ public class CollectionManager {
         }
     }
 
-    public void updateDataBase(String sqlCommand, SpaceMarine sm, Integer key) throws SQLException {
+    private void updateDataBase(SpaceMarine sm, Integer key, String login) throws SQLException {
+        String sqlCommand = "UPDATE marines SET owner=?, name=?, coordinate_x=?, coordinate_y=?," +
+                " creation_date=?, health=?, astartes_category=?," +
+                " weapon=?, melee_weapon=?, chapter_name=?, chapter_world=? WHERE id=?;";
         preparedStatement = connection.prepareStatement(sqlCommand);
 
-        preparedStatement.setString(1, sm.getName());
-        preparedStatement.setInt(2, sm.getCoordinateX());
-        preparedStatement.setInt(3, sm.getCoordinateY());
-        preparedStatement.setString(4, sm.getCreationDate());
+        preparedStatement.setString(1, login);
+        preparedStatement.setString(2, sm.getName());
+        preparedStatement.setInt(3, sm.getCoordinateX());
+        preparedStatement.setInt(4, sm.getCoordinateY());
+        preparedStatement.setString(5, sm.getCreationDate());
 
         if (sm.getHealth() == null) {
-            preparedStatement.setNull(5, Types.INTEGER);
+            preparedStatement.setNull(6, Types.INTEGER);
         } else {
-            preparedStatement.setInt(5, sm.getHealth());
+            preparedStatement.setInt(6, sm.getHealth());
         }
 
         if (sm.getCategory() == null) {
-            preparedStatement.setNull(6, Types.VARCHAR);
+            preparedStatement.setNull(7, Types.VARCHAR);
         } else {
-            preparedStatement.setString(6, sm.getCategory().toString());
+            preparedStatement.setString(7, sm.getCategory().toString());
         }
 
         if (sm.getWeaponType() == null) {
-            preparedStatement.setNull(7, Types.VARCHAR);
+            preparedStatement.setNull(8, Types.VARCHAR);
         } else {
-            preparedStatement.setString(7, sm.getWeaponType().toString());
+            preparedStatement.setString(8, sm.getWeaponType().toString());
         }
 
         if (sm.getMeleeWeapon() == null) {
-            preparedStatement.setNull(8, Types.VARCHAR);
+            preparedStatement.setNull(9, Types.VARCHAR);
         } else {
-            preparedStatement.setString(8, sm.getMeleeWeapon().toString());
+            preparedStatement.setString(9, sm.getMeleeWeapon().toString());
         }
 
-        preparedStatement.setString(9, sm.getChapterName());
-        preparedStatement.setString(10, sm.getChapterWorld());
-        preparedStatement.setInt(11, key);
+        preparedStatement.setString(10, sm.getChapterName());
+        preparedStatement.setString(11, sm.getChapterWorld());
+        preparedStatement.setInt(12, key);
+    }
+
+    private boolean checkUser(Integer key, String login) throws SQLException {
+        String sqlCommand = "SELECT id FROM marines WHERE id=? AND owner=?;";
+        preparedStatement = connection.prepareStatement(sqlCommand);
+        preparedStatement.setInt(1, key);
+        preparedStatement.setString(2, login);
+        return preparedStatement.executeQuery().next();
     }
 
     public String put(SpaceMarine sm) {

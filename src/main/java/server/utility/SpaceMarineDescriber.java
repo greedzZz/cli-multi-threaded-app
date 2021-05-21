@@ -14,6 +14,7 @@ public class SpaceMarineDescriber {
                 "Weapon: " + sm.getWeaponType() + "\n" +
                 "Melee Weapon: " + sm.getMeleeWeapon() + "\n" +
                 "Chapter name: " + sm.getChapterName() + "\n" +
-                "Chapter world: " + sm.getChapterWorld();
+                "Chapter world: " + sm.getChapterWorld() + "\n" +
+                "Owner: " + sm.getOwner();
     }
 }

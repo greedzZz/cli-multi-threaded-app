@@ -13,6 +13,7 @@ public class SpaceMarine implements Comparable<SpaceMarine>, Serializable {
     private Weapon weaponType; //Поле может быть null
     private MeleeWeapon meleeWeapon; //Поле может быть null
     private Chapter chapter; //Поле не может быть null
+    private String owner;
 
     public SpaceMarine(String name,
                        Coordinates coordinates,
@@ -141,6 +142,14 @@ public class SpaceMarine implements Comparable<SpaceMarine>, Serializable {
 
     public String getChapterWorld() {
         return chapter.getWorld();
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
     }
 
 }

@@ -3,7 +3,6 @@ package client.utility;
 import java.util.Scanner;
 
 public class ClientAsker {
-
     public int ask() {
         Scanner scanner = new Scanner(System.in);
         String answer;

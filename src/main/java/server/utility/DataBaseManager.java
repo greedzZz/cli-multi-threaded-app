@@ -31,12 +31,22 @@ public class DataBaseManager {
     public void createMainTable() throws SQLException {
         try {
             statement = connection.createStatement();
-            String sqlCommand = "CREATE TABLE IF NOT EXISTS marines (id INT PRIMARY KEY," +
-                    " name VARCHAR(255) NOT NULL, coordinate_x INT NOT NULL," +
-                    " coordinate_y INT NOT NULL, creation_date VARCHAR(63) NOT NULL," +
-                    " health INT, astartes_category VARCHAR(255), weapon VARCHAR(255)," +
-                    " melee_weapon VARCHAR(255), chapter_name VARCHAR(255) NOT NULL ," +
-                    " chapter_world VARCHAR(255) NOT NULL);";
+            String sqlCommand = "CREATE TABLE IF NOT EXISTS marines (owner TEXT NOT NULL, id INT PRIMARY KEY," +
+                    " name TEXT NOT NULL, coordinate_x INT NOT NULL," +
+                    " coordinate_y INT NOT NULL, creation_date VARCHAR(29) NOT NULL," +
+                    " health INT, astartes_category VARCHAR(8), weapon VARCHAR(16)," +
+                    " melee_weapon VARCHAR(11), chapter_name TEXT NOT NULL ," +
+                    " chapter_world TEXT NOT NULL);";
+            statement.executeUpdate(sqlCommand);
+        } catch (SQLException e) {
+            throw new SQLException("A database access error has occurred or connection has closed.");
+        }
+    }
+
+    public void createUserTable() throws SQLException {
+        try {
+            statement = connection.createStatement();
+            String sqlCommand = "CREATE TABLE IF NOT EXISTS users (login TEXT PRIMARY KEY, password TEXT NOT NULL);";
             statement.executeUpdate(sqlCommand);
         } catch (SQLException e) {
             throw new SQLException("A database access error has occurred or connection has closed.");
@@ -47,6 +57,7 @@ public class DataBaseManager {
         loadDriver();
         connect();
         createMainTable();
+        createUserTable();
         String sqlCommand = "SELECT * FROM marines;";
         ResultSet resultSet = statement.executeQuery(sqlCommand);
         while (resultSet.next()) {
@@ -93,5 +104,10 @@ public class DataBaseManager {
             cm.put(new SpaceMarine(id, name, new Coordinates(x, y), creationDate, health, category, weapon, meleeWeapon, new Chapter(chapName, chapWorld)));
         }
         cm.setConnection(connection);
+        statement.close();
+    }
+
+    public Connection getConnection() {
+        return connection;
     }
 }

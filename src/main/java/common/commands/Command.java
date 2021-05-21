@@ -1,5 +1,6 @@
 package common.commands;
 
+import common.User;
 import common.content.Chapter;
 import common.content.SpaceMarine;
 import server.CollectionManager;
@@ -11,6 +12,15 @@ public abstract class Command implements Serializable {
     protected Integer intArg;
     protected SpaceMarine smArg;
     protected Chapter chapArg;
+    protected User user;
+
+    public Command(boolean newbie, String login, String password) {
+        user = new User(newbie, login, password);
+    }
+
+    public User getUser() {
+        return user;
+    }
 
     public abstract String execute(CollectionManager cm);
 }

@@ -18,11 +18,13 @@ public class CommandManager {
     private final ChapterReader chapterReader;
     private final ScriptReader scriptReader;
     private final Serializer serializer;
+    private final Authenticator authenticator;
 
     public CommandManager() {
         this.elementReader = new ElementReader();
         this.chapterReader = new ChapterReader();
         this.serializer = new Serializer();
+        this.authenticator = new Authenticator();
         this.scriptReader = new ScriptReader(elementReader, chapterReader, serializer);
     }
 
@@ -38,17 +40,20 @@ public class CommandManager {
             try {
                 switch (command) {
                     case "help":
-                        Command help = new Help();
+                        Command help = new Help(authenticator.readNewbie(scanner),
+                                authenticator.readLogin(scanner), authenticator.readPassword(scanner));
                         commandSender.send(serializer.serialize(help));
                         System.out.println(answerReceiver.receive());
                         break;
                     case "info":
-                        Command info = new Info();
+                        Command info = new Info(authenticator.readNewbie(scanner),
+                                authenticator.readLogin(scanner), authenticator.readPassword(scanner));
                         commandSender.send(serializer.serialize(info));
                         System.out.println(answerReceiver.receive());
                         break;
                     case "show":
-                        Command show = new Show();
+                        Command show = new Show(authenticator.readNewbie(scanner),
+                                authenticator.readLogin(scanner), authenticator.readPassword(scanner));
                         commandSender.send(serializer.serialize(show));
                         System.out.println(answerReceiver.receive());
                         break;
@@ -59,7 +64,8 @@ public class CommandManager {
                                 throw new NumberFormatException();
                             }
                             SpaceMarine sm = elementReader.readElement(scanner);
-                            Command insert = new Insert(key, sm);
+                            Command insert = new Insert(authenticator.readNewbie(scanner),
+                                    authenticator.readLogin(scanner), authenticator.readPassword(scanner), key, sm);
                             commandSender.send(serializer.serialize(insert));
                             System.out.println(answerReceiver.receive());
                         } catch (ArrayIndexOutOfBoundsException e) {
@@ -75,7 +81,8 @@ public class CommandManager {
                                 throw new NumberFormatException();
                             }
                             SpaceMarine sm = elementReader.readElement(scanner);
-                            Command update = new Update(id, sm);
+                            Command update = new Update(authenticator.readNewbie(scanner),
+                                    authenticator.readLogin(scanner), authenticator.readPassword(scanner), id, sm);
                             commandSender.send(serializer.serialize(update));
                             System.out.println(answerReceiver.receive());
                         } catch (ArrayIndexOutOfBoundsException e) {
@@ -87,7 +94,8 @@ public class CommandManager {
                     case "remove_key":
                         try {
                             Integer key = Integer.parseInt(input[1]);
-                            Command removeKey = new RemoveKey(key);
+                            Command removeKey = new RemoveKey(authenticator.readNewbie(scanner),
+                                    authenticator.readLogin(scanner), authenticator.readPassword(scanner), key);
                             commandSender.send(serializer.serialize(removeKey));
                             System.out.println(answerReceiver.receive());
                         } catch (ArrayIndexOutOfBoundsException e) {
@@ -97,7 +105,8 @@ public class CommandManager {
                         }
                         break;
                     case "clear":
-                        Command clear = new Clear();
+                        Command clear = new Clear(authenticator.readNewbie(scanner),
+                                authenticator.readLogin(scanner), authenticator.readPassword(scanner));
                         commandSender.send(serializer.serialize(clear));
                         System.out.println(answerReceiver.receive());
                         break;
@@ -105,10 +114,9 @@ public class CommandManager {
                         try {
                             File file = new File(input[1]);
                             scriptReader.addScript(file.getAbsolutePath());
-                            Command executeScript = new ExecuteScript();
-                            commandSender.send(serializer.serialize(executeScript));
-                            System.out.println(answerReceiver.receive());
-                            scriptReader.readScript(input[1], commandSender, answerReceiver);
+                            System.out.println("Trying to start execution of the script.\n");
+                            scriptReader.readScript(input[1], commandSender, answerReceiver, authenticator.readNewbie(scanner),
+                                    authenticator.readLogin(scanner), authenticator.readPassword(scanner));
                             scriptReader.clearScripts();
                         } catch (ArrayIndexOutOfBoundsException e) {
                             System.out.println("To execute this command, you must enter the required argument.");
@@ -116,14 +124,13 @@ public class CommandManager {
                         break;
                     case "exit":
                         scanner.close();
-                        Command exit = new Exit();
-                        commandSender.send(serializer.serialize(exit));
-                        System.out.println(answerReceiver.receive());
+                        System.out.println("The program is finished.\n");
                         System.exit(0);
                         break;
                     case "remove_greater": {
                         SpaceMarine sm = elementReader.readElement(scanner);
-                        Command removeGreater = new RemoveGreater(sm);
+                        Command removeGreater = new RemoveGreater(authenticator.readNewbie(scanner),
+                                authenticator.readLogin(scanner), authenticator.readPassword(scanner), sm);
                         commandSender.send(serializer.serialize(removeGreater));
                         System.out.println(answerReceiver.receive());
                     }
@@ -132,7 +139,8 @@ public class CommandManager {
                         try {
                             Integer key = Integer.parseInt(input[1]);
                             SpaceMarine sm = elementReader.readElement(scanner);
-                            Command replaceIfGreater = new ReplaceIfGreater(key, sm);
+                            Command replaceIfGreater = new ReplaceIfGreater(authenticator.readNewbie(scanner),
+                                    authenticator.readLogin(scanner), authenticator.readPassword(scanner), key, sm);
                             commandSender.send(serializer.serialize(replaceIfGreater));
                             System.out.println(answerReceiver.receive());
                         } catch (ArrayIndexOutOfBoundsException e) {
@@ -144,7 +152,8 @@ public class CommandManager {
                     case "remove_greater_key":
                         try {
                             Integer key = Integer.parseInt(input[1]);
-                            Command removeGreaterKey = new RemoveGreaterKey(key);
+                            Command removeGreaterKey = new RemoveGreaterKey(authenticator.readNewbie(scanner),
+                                    authenticator.readLogin(scanner), authenticator.readPassword(scanner), key);
                             commandSender.send(serializer.serialize(removeGreaterKey));
                             System.out.println(answerReceiver.receive());
                         } catch (ArrayIndexOutOfBoundsException e) {
@@ -154,19 +163,22 @@ public class CommandManager {
                         }
                         break;
                     case "group_counting_by_coordinates":
-                        Command groupCountingByCoordinates = new GroupCountingByCoordinates();
+                        Command groupCountingByCoordinates = new GroupCountingByCoordinates(authenticator.readNewbie(scanner),
+                                authenticator.readLogin(scanner), authenticator.readPassword(scanner));
                         commandSender.send(serializer.serialize(groupCountingByCoordinates));
                         System.out.println(answerReceiver.receive());
                         break;
                     case "filter_by_chapter":
                         Chapter chapter = chapterReader.readChapter(scanner);
-                        Command filterByChapter = new FilterByChapter(chapter);
+                        Command filterByChapter = new FilterByChapter(authenticator.readNewbie(scanner),
+                                authenticator.readLogin(scanner), authenticator.readPassword(scanner), chapter);
                         commandSender.send(serializer.serialize(filterByChapter));
                         System.out.println(answerReceiver.receive());
                         break;
                     case "filter_starts_with_name":
                         try {
-                            Command filterStartsWithName = new FilterStartsWithName(input[1]);
+                            Command filterStartsWithName = new FilterStartsWithName(authenticator.readNewbie(scanner),
+                                    authenticator.readLogin(scanner), authenticator.readPassword(scanner), input[1]);
                             commandSender.send(serializer.serialize(filterStartsWithName));
                             System.out.println(answerReceiver.receive());
                         } catch (ArrayIndexOutOfBoundsException e) {

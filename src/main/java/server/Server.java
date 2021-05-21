@@ -1,10 +1,12 @@
 package server;
 
 import common.Serializer;
+import common.User;
 import common.commands.Command;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import server.utility.DataBaseManager;
+import server.utility.UserValidator;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -13,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -24,11 +27,13 @@ public class Server {
     private final int PORT = 8725;
     private final Serializer serializer;
     private final Logger logger;
+    private final UserValidator userValidator;
 
     public Server() {
         logger = LogManager.getLogger();
         this.address = new InetSocketAddress(PORT);
         this.serializer = new Serializer();
+        this.userValidator = new UserValidator();
         logger.info("Server start.");
 
     }
@@ -88,7 +93,19 @@ public class Server {
                         channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
                     }
                     if (key.isWritable()) {
-                        sendAnswer(executeCommand(readRequest(), collectionManager));
+                        try {
+                            Command command = readRequest();
+                            User user = command.getUser();
+                            if (userValidator.validate(user, dataBaseManager.getConnection())) {
+                                sendAnswer(executeCommand(command, collectionManager));
+                            } else if (user.isNewbie()) {
+                                sendAnswer("Unfortunately, a user with this login is already registered.\n");
+                            } else {
+                                sendAnswer("Sorry, the login/password is incorrect.");
+                            }
+                        } catch (SQLException s) {
+                            sendAnswer("A database access error has occurred or connection has closed.\n");
+                        }
                         channel.register(selector, SelectionKey.OP_READ);
                     }
                     keyIterator.remove();
