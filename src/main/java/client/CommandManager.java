@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Scanner;
 
 public class CommandManager {
@@ -191,7 +192,7 @@ public class CommandManager {
 
             } catch (SocketTimeoutException e) {
                 throw new SocketTimeoutException();
-            } catch (IOException | ClassNotFoundException | IllegalArgumentException e) {
+            } catch (IOException | ClassNotFoundException | IllegalArgumentException | NoSuchAlgorithmException e) {
                 System.out.println(e.getMessage());
             }
         }

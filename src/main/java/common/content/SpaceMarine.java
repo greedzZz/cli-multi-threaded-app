@@ -48,7 +48,8 @@ public class SpaceMarine implements Comparable<SpaceMarine>, Serializable {
                        AstartesCategory category,
                        Weapon weaponType,
                        MeleeWeapon meleeWeapon,
-                       Chapter chapter) throws IllegalArgumentException {
+                       Chapter chapter,
+                       String owner) throws IllegalArgumentException {
         if (name == null) {
             throw new IllegalArgumentException("Name cannot be empty word.");
         } else if (health != null && health <= 0) {
@@ -75,6 +76,7 @@ public class SpaceMarine implements Comparable<SpaceMarine>, Serializable {
             this.weaponType = weaponType;
             this.meleeWeapon = meleeWeapon;
             this.chapter = chapter;
+            this.owner = owner;
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }

@@ -100,8 +100,9 @@ public class DataBaseManager {
 
             String chapName = resultSet.getString("chapter_name");
             String chapWorld = resultSet.getString("chapter_world");
+            String owner = resultSet.getString("owner");
 
-            cm.put(new SpaceMarine(id, name, new Coordinates(x, y), creationDate, health, category, weapon, meleeWeapon, new Chapter(chapName, chapWorld)));
+            cm.put(new SpaceMarine(id, name, new Coordinates(x, y), creationDate, health, category, weapon, meleeWeapon, new Chapter(chapName, chapWorld), owner));
         }
         cm.setConnection(connection);
         statement.close();
