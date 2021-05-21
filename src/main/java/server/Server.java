@@ -21,11 +21,10 @@ public class Server {
     private DatagramChannel channel;
     private final int PORT = 8725;
     private final Serializer serializer;
-    private final Logger logger;
+    private final static Logger logger = LogManager.getLogger();
     private final ExecutorService service;
 
     public Server() {
-        logger = LogManager.getLogger();
         this.address = new InetSocketAddress(PORT);
         this.serializer = new Serializer();
         service = Executors.newFixedThreadPool(10);
@@ -34,8 +33,12 @@ public class Server {
     }
 
     public static void main(String[] args) {
-        Server server = new Server();
-        server.run();
+        if (args.length == 4) {
+            Server server = new Server();
+            server.run(args[0], args [1], args[2], args[3]);
+        } else {
+            logger.error("The program arguments are incorrectly specified. (correct option: \"host\" \"database\" \"user\" \"password\")");
+        }
     }
 
     public void openChannel() throws IOException {
@@ -67,10 +70,10 @@ public class Server {
         }
     }
 
-    public void run() {
+    public void run(String host, String database, String user, String password) {
         try {
             CollectionManager collectionManager = new CollectionManager();
-            DataBaseManager dataBaseManager = new DataBaseManager();
+            DataBaseManager dataBaseManager = new DataBaseManager(host, database, user, password);
             dataBaseManager.fillCollection(collectionManager);
             logger.info("The collection is created based on the contents of the database.");
             openChannel();

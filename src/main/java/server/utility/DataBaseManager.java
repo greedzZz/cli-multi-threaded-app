@@ -8,9 +8,15 @@ import java.sql.*;
 public class DataBaseManager {
     private Connection connection;
     private Statement statement;
-    private final String URL = "jdbc:postgresql://localhost:5432/postgres"; // "jdbc:postgresql://pg:5432/studs";
-    private String user = "postgres"; //"s312444";
-    private String password = "databases"; //"";
+    private final String URL;
+    private final String user;
+    private final String password;
+
+    public DataBaseManager(String host, String database, String user, String password) {
+        this.user = user;
+        this.password = password;
+        this.URL = "jdbc:postgresql://" + host + ":5432/" + database;
+    }
 
     public void loadDriver() throws ClassNotFoundException {
         try {
