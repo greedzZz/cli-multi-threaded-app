@@ -37,7 +37,8 @@ public class Server {
             Server server = new Server();
             server.run(args[0], args [1], args[2], args[3]);
         } else {
-            logger.error("The program arguments are incorrectly specified. (correct option: \"host\" \"database\" \"user\" \"password\")");
+            logger.error("The program arguments are incorrectly specified.\n" +
+                    " (correct option: \"host\" \"database\" \"user\" \"password\")");
         }
     }
 
