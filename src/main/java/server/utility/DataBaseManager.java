@@ -30,7 +30,7 @@ public class DataBaseManager {
         try {
             connection = DriverManager.getConnection(URL, user, password);
         } catch (SQLException e) {
-            throw new SQLException("Wrong login or password.");
+            throw new SQLException("Wrong login/password or database host/name.");
         }
     }
 
